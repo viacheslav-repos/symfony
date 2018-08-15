@@ -26,7 +26,7 @@
     "require-dev": {
         "symfony/debug-pack": "*",
         "symfony/dotenv": "^3.4",
-        "symfony/maker-bundle": "^1.0",
+        "symfony/maker-bundle": "^1.6",
         "symfony/profiler-pack": "*",
         "symfony/test-pack": "^1.0",
         "symfony/web-server-bundle": "^3.4"
