@@ -7,7 +7,9 @@
     <h1>Products list</h1>
 
     {% for product in products %}
-        {{ product.id }} | {{ product.title }} | <a href="{{ path('edit_product', {'id': product.id}) }}">edit</a> <br>
+        {{ product.id }} | {{ product.title }} | <a href="{{ path('edit_product', {'productId': product.id}) }}">edit</a> | <a href="{{ path('delete_product', {'productId': product.id}) }}">delete</a><br>
     {% endfor %}
+
+    <a href="{{ path('add_product') }}">add new</a>
 
 {% endblock %}
