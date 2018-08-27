@@ -12,6 +12,8 @@ use Symfony\Component\Form\FormTypeInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Response;
+use Psr\Log\LoggerInterface;
+use Symfony\Component\Cache\Simple\FilesystemCache;
 
 /**
  * Class ProductsController
@@ -19,15 +21,21 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * php bin/console make:controller ProductController
  *
- * @property EntityManager $productManager
+ * @property EntityManager   $productManager
+ * @property LoggerInterface $logger
+ * @property FilesystemCache $cache
  */
 class ProductsController extends Controller
 {
     private $productManager;
+    private $logger;
+    private $cache;
 
-    public function __construct(EntityManager $entityManager)
+    public function __construct(EntityManager $entityManager, LoggerInterface $logger)
     {
         $this->productManager = $entityManager;
+        $this->logger         = $logger;
+        $this->cache          = new FilesystemCache();
     }
 
     /**
@@ -51,15 +59,21 @@ class ProductsController extends Controller
      */
     public function show($productId)
     {
+        if ($this->cache->has('product.' . $productId)) {
+            return $this->cache->get('product.' . $productId);
+        }
+
         if (!$product = $this->productManager->getRepository(Product::class)->find($productId)) {
             throw $this->createNotFoundException('No product found for id ' . $productId);
         }
 
-        // todo: show separate product details
-
-        return $this->render('product/edit.html.twig', array(
-            'form' => $this->createForm(ProductType::class, $product)->createView(),
+        $renderData = $this->render('product/show.html.twig', array(
+            'product' => $product,
         ));
+
+        $this->cache->set('product.' . $productId, $renderData);
+
+        return $renderData;
     }
 
     /**
@@ -78,8 +92,25 @@ class ProductsController extends Controller
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $this->productManager->persist($form->getData());
+            /** @var Product $productData */
+            $productData = $form->getData();
+
+            $this->productManager->persist($productData);
             $this->productManager->flush();
+
+            $this->logger->info("New product with id #{$productData->getId()} has been created.");
+
+            /** send email about creating a product */
+            /*$message = (new \Swift_Message('Hello Email'))
+                ->setFrom('symfony.local@example.com')
+                ->setTo('your.mail@gmail.com')
+                ->setBody($this->renderView('emails/create_product.html.twig', ['productId' => $productData->getId()]), 'text/html');
+
+            $this->get('mailer')->send($message);*/
+
+            $this->cache->set('product.' . $productId, $this->render('product/show.html.twig', array(
+                'product' => $product,
+            )));
 
             return $this->redirectToRoute('show_products_list');
         }
@@ -113,6 +144,12 @@ class ProductsController extends Controller
             $this->productManager->persist($form->getData());
             $this->productManager->flush();
 
+            $this->logger->info("Product with id #{$productId} has been modified.");
+
+            $this->cache->set('product.' . $productId, $this->render('product/show.html.twig', array(
+                'product' => $product,
+            )));
+
             return $this->redirectToRoute('show_products_list');
         }
 
@@ -136,10 +173,12 @@ class ProductsController extends Controller
             throw $this->createNotFoundException('No product found for id ' . $productId);
         }
 
-        // todo: are you sure ?
-
         $this->productManager->remove($product);
         $this->productManager->flush();
+
+        $this->logger->info("Product with id #{$productId} has been deleted.");
+
+        $this->cache->delete('product.' . $productId);
 
         return $this->list();
     }

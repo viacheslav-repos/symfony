@@ -1,0 +1,8 @@
+{# templates/emails/create_product.html.twig #}
+<h3>You did it!</h3>
+
+Hi! You're successfully created a product with id #{{ productId }}.
+
+To see created product, go to <a href="{{ url('show_product_by_id', {'productId': productId}) }}">here</a>.
+
+Thanks!

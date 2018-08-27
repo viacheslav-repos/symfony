@@ -31,4 +31,4 @@ services:
     # please note that last definitions always *replace* previous ones
 
     App\Controller\ProductsController:
-        arguments: [ '@doctrine.orm.entity_manager'  ]
+        arguments: [ '@doctrine.orm.entity_manager', '@monolog.logger.products' ]

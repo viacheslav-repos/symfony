@@ -7,7 +7,10 @@
     <h1>Products list</h1>
 
     {% for product in products %}
-        {{ product.id }} | {{ product.title }} | <a href="{{ path('edit_product', {'productId': product.id}) }}">edit</a> | <a href="{{ path('delete_product', {'productId': product.id}) }}">delete</a><br>
+        {{ product.id }} | {{ product.title }} |
+        <a href="{{ path('show_product_by_id', {'productId': product.id}) }}">details</a> |
+        <a href="{{ path('edit_product', {'productId': product.id}) }}">edit</a> |
+        <a href="{{ path('delete_product', {'productId': product.id}) }}" onclick="return confirm('Are you sure?')">delete</a><br>
     {% endfor %}
 
     <a href="{{ path('add_product') }}">add new</a>
