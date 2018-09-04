@@ -98,7 +98,9 @@ class ProductsController extends Controller
             $this->productManager->persist($productData);
             $this->productManager->flush();
 
-            $this->logger->info("New product with id #{$productData->getId()} has been created.");
+            $productId = $productData->getId();
+
+            $this->logger->info("New product with id #{$productId} has been created.");
 
             /** send email about creating a product */
             /*$message = (new \Swift_Message('Hello Email'))
@@ -109,7 +111,7 @@ class ProductsController extends Controller
             $this->get('mailer')->send($message);*/
 
             $this->cache->set('product.' . $productId, $this->render('product/show.html.twig', array(
-                'product' => $product,
+                'product' => $this->productManager->getRepository(Product::class)->find($productId),
             )));
 
             return $this->redirectToRoute('show_products_list');

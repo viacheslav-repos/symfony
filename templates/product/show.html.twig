@@ -8,9 +8,10 @@
 
     <h1>Product #{{ product.id }} details</h1>
 
-    <p>{{ product.title }}</p>
-    <p>{{ product.description }}</p>
-    <p>{{ product.price }}</p>
+    <p>Category: <b>{{ product.category.name }}</b></p>
+    <p>Title: <b>{{ product.title }}</b></p>
+    <p>Description: <b>{{ product.description }}</b></p>
+    <p>Price: <b>{{ product.price }}</b></p>
 
     <a href="{{ path('show_products_list') }}">Back to list</a>
 
