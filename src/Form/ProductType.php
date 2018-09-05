@@ -2,6 +2,7 @@
 
 namespace App\Form;
 
+use App\Entity\AttributeValue;
 use App\Entity\Category;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
@@ -20,14 +21,18 @@ class ProductType extends AbstractType
      */
     public function buildForm(FormBuilderInterface $builder, array $options)
     {
-        // TODO: add validation
-
         $builder->add('title', Type\TextType::class)
                 ->add('description', Type\TextType::class)
                 ->add('price', Type\IntegerType::class)
                 ->add('category', EntityType::class, array(
                     'class'        => Category::class,
                     'choice_label' => 'name',
+                ))
+                ->add('attributeValues', EntityType::class, array(
+                    'class'        => AttributeValue::class,
+                    'choice_label' => 'title',
+                    'multiple'     => true,
+                    'expanded'     => true
                 ))
                 ->add('save', Type\SubmitType::class, array('label' => 'Save'));
     }

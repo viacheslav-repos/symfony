@@ -2,7 +2,10 @@
 
 namespace App\Entity;
 
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\Mapping as ORM;
+use Doctrine\Common\Collections\Collection;
+use Symfony\Component\Validator\Constraints as Assert;
 
 /**
  * @ORM\Entity(repositoryClass="App\Repository\ProductRepository")
@@ -20,13 +23,20 @@ class Product
 
     /**
      * @ORM\Column(type="string", length=255, nullable=true)
+     *
+     * @Assert\Length(
+     *      min = 3,
+     *      max = 255,
+     *      minMessage = "Title must be at least {{ limit }} characters long",
+     *      maxMessage = "Title cannot be longer than {{ limit }} characters"
+     * )
      */
     private $title;
 
     /**
-     * TODO: validate price
-     *
      * @ORM\Column(type="integer", nullable=true)
+     *
+     * @Assert\GreaterThan(0)
      */
     private $price;
 
@@ -40,6 +50,16 @@ class Product
      * @ORM\JoinColumn(nullable=false)
      */
     private $category;
+
+    /**
+     * @ORM\ManyToMany(targetEntity="App\Entity\AttributeValue", inversedBy="products")
+     */
+    private $attributeValues;
+
+    public function __construct()
+    {
+        $this->attributeValues = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -90,6 +110,34 @@ class Product
     public function setCategory(?Category $category): self
     {
         $this->category = $category;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection|AttributeValue[]
+     */
+    public function getAttributeValues(): Collection
+    {
+        return $this->attributeValues;
+    }
+
+    public function addAttributeValue(AttributeValue $attributeValue): self
+    {
+        if (!$this->attributeValues->contains($attributeValue)) {
+            $this->attributeValues[] = $attributeValue;
+            $attributeValue->addProduct($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAttributeValue(AttributeValue $attributeValue): self
+    {
+        if ($this->attributeValues->contains($attributeValue)) {
+            $this->attributeValues->removeElement($attributeValue);
+            $attributeValue->removeProduct($this);
+        }
 
         return $this;
     }

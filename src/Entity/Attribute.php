@@ -2,6 +2,8 @@
 
 namespace App\Entity;
 
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 
 /**
@@ -21,6 +23,16 @@ class Attribute
      */
     private $title;
 
+    /**
+     * @ORM\OneToMany(targetEntity="App\Entity\AttributeValue", mappedBy="attribute")
+     */
+    private $attributeValues;
+
+    public function __construct()
+    {
+        $this->attributeValues = new ArrayCollection();
+    }
+
     public function getId(): ?int
     {
         return $this->id;
@@ -34,6 +46,37 @@ class Attribute
     public function setTitle(string $title): self
     {
         $this->title = $title;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection|AttributeValue[]
+     */
+    public function getAttributeValues(): Collection
+    {
+        return $this->attributeValues;
+    }
+
+    public function addAttributeValue(AttributeValue $attributeValue): self
+    {
+        if (!$this->attributeValues->contains($attributeValue)) {
+            $this->attributeValues[] = $attributeValue;
+            $attributeValue->setAttribute($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAttributeValue(AttributeValue $attributeValue): self
+    {
+        if ($this->attributeValues->contains($attributeValue)) {
+            $this->attributeValues->removeElement($attributeValue);
+            // set the owning side to null (unless already changed)
+            if ($attributeValue->getAttribute() === $this) {
+                $attributeValue->setAttribute(null);
+            }
+        }
 
         return $this;
     }

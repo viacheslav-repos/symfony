@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\AttributeValue;
 use App\Entity\Product;
 use App\Form\ProductType;
 use Doctrine\Common\Persistence\ObjectRepository;
@@ -19,9 +20,9 @@ use Symfony\Component\Cache\Simple\FilesystemCache;
  * Class ProductsController
  * @package App\Controller
  *
- * php bin/console make:controller ProductController
+ * php bin/console make:controller ProductsController
  *
- * @property EntityManager   $productManager
+ * @property EntityManager   $entityManager
  * @property LoggerInterface $logger
  * @property FilesystemCache $cache
  */
@@ -33,9 +34,9 @@ class ProductsController extends Controller
 
     public function __construct(EntityManager $entityManager, LoggerInterface $logger)
     {
-        $this->productManager = $entityManager;
-        $this->logger         = $logger;
-        $this->cache          = new FilesystemCache();
+        $this->entityManager = $entityManager;
+        $this->logger        = $logger;
+        $this->cache         = new FilesystemCache();
     }
 
     /**
@@ -46,7 +47,7 @@ class ProductsController extends Controller
     public function list()
     {
         return $this->render('product/list.html.twig', [
-            'products' => $this->productManager->getRepository(Product::class)->findAll(),
+            'products' => $this->entityManager->getRepository(Product::class)->findAll(),
         ]);
     }
 
@@ -63,7 +64,7 @@ class ProductsController extends Controller
             return $this->cache->get('product.' . $productId);
         }
 
-        if (!$product = $this->productManager->getRepository(Product::class)->find($productId)) {
+        if (!$product = $this->entityManager->getRepository(Product::class)->find($productId)) {
             throw $this->createNotFoundException('No product found for id ' . $productId);
         }
 
@@ -95,8 +96,8 @@ class ProductsController extends Controller
             /** @var Product $productData */
             $productData = $form->getData();
 
-            $this->productManager->persist($productData);
-            $this->productManager->flush();
+            $this->entityManager->persist($productData);
+            $this->entityManager->flush();
 
             $productId = $productData->getId();
 
@@ -111,7 +112,7 @@ class ProductsController extends Controller
             $this->get('mailer')->send($message);*/
 
             $this->cache->set('product.' . $productId, $this->render('product/show.html.twig', array(
-                'product' => $this->productManager->getRepository(Product::class)->find($productId),
+                'product' => $this->entityManager->getRepository(Product::class)->find($productId),
             )));
 
             return $this->redirectToRoute('show_products_list');
@@ -134,7 +135,7 @@ class ProductsController extends Controller
      */
     public function edit($productId, Request $request)
     {
-        if (!$product = $this->productManager->getRepository(Product::class)->find($productId)) {
+        if (!$product = $this->entityManager->getRepository(Product::class)->find($productId)) {
             throw $this->createNotFoundException('No product found for id ' . $productId);
         }
 
@@ -143,8 +144,8 @@ class ProductsController extends Controller
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $this->productManager->persist($form->getData());
-            $this->productManager->flush();
+            $this->entityManager->persist($form->getData());
+            $this->entityManager->flush();
 
             $this->logger->info("Product with id #{$productId} has been modified.");
 
@@ -171,16 +172,26 @@ class ProductsController extends Controller
      */
     public function delete($productId)
     {
-        if (!$product = $this->productManager->getRepository(Product::class)->find($productId)) {
+        if (!$product = $this->entityManager->getRepository(Product::class)->find($productId)) {
             throw $this->createNotFoundException('No product found for id ' . $productId);
         }
 
-        $this->productManager->remove($product);
-        $this->productManager->flush();
+        $this->entityManager->remove($product);
+        $this->entityManager->flush();
 
         $this->logger->info("Product with id #{$productId} has been deleted.");
 
         $this->cache->delete('product.' . $productId);
+
+        return $this->list();
+    }
+
+    /**
+     * @Route("/products/clearcache", name="clear_cache")
+     */
+    public function clearCache()
+    {
+        $this->cache->clear();
 
         return $this->list();
     }
