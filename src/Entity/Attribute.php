@@ -24,7 +24,7 @@ class Attribute
     private $title;
 
     /**
-     * @ORM\OneToMany(targetEntity="App\Entity\AttributeValue", mappedBy="attribute", cascade={"persist"})
+     * @ORM\OneToMany(targetEntity="App\Entity\AttributeValue", mappedBy="attribute", cascade={"persist"}, orphanRemoval=true)
      */
     private $attributeValues;
 
