@@ -1,0 +1,16 @@
+sonata_block:
+    blocks:
+        # enable the SonataAdminBundle block
+        sonata.admin.block.admin_list:
+            contexts: [admin]
+        sonata.admin.block.search_result:
+            contexts:   [admin]
+
+sonata_admin:
+    templates:
+        # other configuration options
+        search:              '@SonataAdmin/Core/search.html.twig'
+        search_result_block: '@SonataAdmin/Block/block_search_result.html.twig'
+
+    global_search:
+        empty_boxes: fade

@@ -24,7 +24,7 @@ class AttributeValue
     private $title;
 
     /**
-     * @ORM\ManyToOne(targetEntity="App\Entity\Attribute", inversedBy="attributeValues")
+     * @ORM\ManyToOne(targetEntity="App\Entity\Attribute", inversedBy="attributeValues", cascade={"persist"})
      * @ORM\JoinColumn(nullable=false)
      */
     private $attribute;

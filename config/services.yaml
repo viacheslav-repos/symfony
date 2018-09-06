@@ -32,3 +32,24 @@ services:
 
     App\Controller\ProductsController:
         arguments: [ '@doctrine.orm.entity_manager', '@monolog.logger.products' ]
+
+    admin.product:
+        class: App\Admin\ProductsAdmin
+        arguments: [~, App\Entity\Product, ~]
+        tags:
+        - { name: sonata.admin, manager_type: orm, label: Products, group: Entities }
+        public: true
+
+    admin.attribute:
+        class: App\Admin\AttributesAdmin
+        arguments: [~, App\Entity\Attribute, ~]
+        tags:
+        - { name: sonata.admin, manager_type: orm, label: Attributes, group: Entities }
+        public: true
+
+    admin.category:
+        class: App\Admin\CategoriesAdmin
+        arguments: [~, App\Entity\Category, ~]
+        tags:
+        - { name: sonata.admin, manager_type: orm, label: Categories, group: Entities }
+        public: true

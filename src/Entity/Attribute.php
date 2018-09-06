@@ -24,7 +24,7 @@ class Attribute
     private $title;
 
     /**
-     * @ORM\OneToMany(targetEntity="App\Entity\AttributeValue", mappedBy="attribute")
+     * @ORM\OneToMany(targetEntity="App\Entity\AttributeValue", mappedBy="attribute", cascade={"persist"})
      */
     private $attributeValues;
 
@@ -79,5 +79,10 @@ class Attribute
         }
 
         return $this;
+    }
+
+    public function __toString()
+    {
+        return $this->getTitle() ?? 'Attribute';
     }
 }
