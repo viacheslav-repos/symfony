@@ -31,7 +31,10 @@ services:
     # please note that last definitions always *replace* previous ones
 
     App\Controller\ProductsController:
-        arguments: [ '@doctrine.orm.entity_manager', '@monolog.logger.products' ]
+        arguments: [ '@doctrine.orm.entity_manager' ]
+
+    App\EventSubscriber\ProductSubscriber:
+        arguments: [ '@monolog.logger.products', '@twig', '@mailer', '@doctrine.orm.entity_manager' ]
 
     admin.product:
         class: App\Admin\ProductsAdmin

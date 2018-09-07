@@ -2,18 +2,16 @@
 
 namespace App\Controller;
 
-use App\Entity\AttributeValue;
 use App\Entity\Product;
+use App\Event\AddProductEvent;
+use App\Event\DeleteProductEvent;
+use App\Event\EditProductEvent;
 use App\Form\ProductType;
-use Doctrine\Common\Persistence\ObjectRepository;
 use Doctrine\ORM\EntityManager;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
-use Symfony\Component\Form\Extension\Core\Type;
-use Symfony\Component\Form\FormTypeInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Routing\Annotation\Route;
 use Symfony\Component\HttpFoundation\Response;
-use Psr\Log\LoggerInterface;
 use Symfony\Component\Cache\Simple\FilesystemCache;
 
 /**
@@ -22,21 +20,15 @@ use Symfony\Component\Cache\Simple\FilesystemCache;
  *
  * php bin/console make:controller ProductsController
  *
- * @property EntityManager   $entityManager
- * @property LoggerInterface $logger
- * @property FilesystemCache $cache
+ * @property EntityManager $entityManager
  */
 class ProductsController extends Controller
 {
-    private $productManager;
-    private $logger;
-    private $cache;
+    private $entityManager;
 
-    public function __construct(EntityManager $entityManager, LoggerInterface $logger)
+    public function __construct(EntityManager $entityManager)
     {
         $this->entityManager = $entityManager;
-        $this->logger        = $logger;
-        $this->cache         = new FilesystemCache();
     }
 
     /**
@@ -56,25 +48,28 @@ class ProductsController extends Controller
      *
      * @return Response
      *
+     * @throws \Psr\SimpleCache\InvalidArgumentException
+     * @throws \Twig_Error_Loader
+     * @throws \Twig_Error_Runtime
+     * @throws \Twig_Error_Syntax
+     *
      * @Route("/products/show/{productId}", name="show_product_by_id")
      */
     public function show($productId)
     {
-        if ($this->cache->has('product.' . $productId)) {
-            return $this->cache->get('product.' . $productId);
-        }
-
         if (!$product = $this->entityManager->getRepository(Product::class)->find($productId)) {
             throw $this->createNotFoundException('No product found for id ' . $productId);
         }
 
-        $renderData = $this->render('product/show.html.twig', array(
-            'product' => $product,
-        ));
+        $cache = new FilesystemCache();
 
-        $this->cache->set('product.' . $productId, $renderData);
+        if (!$cache->has('product.' . $productId)) {
+            $cache->set('product.' . $productId, $this->container->get('twig')->render('product/show.html.twig', array(
+                'product' => $product,
+            )));
+        }
 
-        return $renderData;
+        return new Response($cache->get('product.' . $productId));
     }
 
     /**
@@ -82,6 +77,7 @@ class ProductsController extends Controller
      *
      * @return \Symfony\Component\HttpFoundation\RedirectResponse|Response
      *
+     * @throws \Doctrine\ORM\ORMException
      * @throws \Doctrine\ORM\OptimisticLockException
      *
      * @Route("/products/add", name="add_product")
@@ -98,22 +94,7 @@ class ProductsController extends Controller
 
             $this->entityManager->persist($productData);
             $this->entityManager->flush();
-
-            $productId = $productData->getId();
-
-            $this->logger->info("New product with id #{$productId} has been created.");
-
-            /** send email about creating a product */
-            /*$message = (new \Swift_Message('Hello Email'))
-                ->setFrom('symfony.local@example.com')
-                ->setTo('your.mail@gmail.com')
-                ->setBody($this->renderView('emails/create_product.html.twig', ['productId' => $productData->getId()]), 'text/html');
-
-            $this->get('mailer')->send($message);*/
-
-            $this->cache->set('product.' . $productId, $this->render('product/show.html.twig', array(
-                'product' => $this->entityManager->getRepository(Product::class)->find($productId),
-            )));
+            $this->get('event_dispatcher')->dispatch('product.add', new AddProductEvent($productData));
 
             return $this->redirectToRoute('show_products_list');
         }
@@ -129,6 +110,7 @@ class ProductsController extends Controller
      *
      * @return \Symfony\Component\HttpFoundation\RedirectResponse|Response
      *
+     * @throws \Doctrine\ORM\ORMException
      * @throws \Doctrine\ORM\OptimisticLockException
      *
      * @Route("/products/edit/{productId}", name="edit_product")
@@ -146,14 +128,9 @@ class ProductsController extends Controller
         if ($form->isSubmitted() && $form->isValid()) {
             $this->entityManager->persist($form->getData());
             $this->entityManager->flush();
+            $this->get('event_dispatcher')->dispatch('product.edit', new EditProductEvent($product));
 
-            $this->logger->info("Product with id #{$productId} has been modified.");
-
-            $this->cache->set('product.' . $productId, $this->render('product/show.html.twig', array(
-                'product' => $product,
-            )));
-
-            return $this->redirectToRoute('show_products_list');
+            return $this->redirectToRoute('show_product_by_id', ['productId' => $productId]);
         }
 
         return $this->render('product/edit.html.twig', array(
@@ -166,6 +143,7 @@ class ProductsController extends Controller
      *
      * @return Response
      *
+     * @throws \Doctrine\ORM\ORMException
      * @throws \Doctrine\ORM\OptimisticLockException
      *
      * @Route("/products/delete/{productId}", name="delete_product")
@@ -178,12 +156,9 @@ class ProductsController extends Controller
 
         $this->entityManager->remove($product);
         $this->entityManager->flush();
+        $this->get('event_dispatcher')->dispatch('product.delete', new DeleteProductEvent($productId));
 
-        $this->logger->info("Product with id #{$productId} has been deleted.");
-
-        $this->cache->delete('product.' . $productId);
-
-        return $this->list();
+        return $this->redirectToRoute('show_products_list');
     }
 
     /**
@@ -191,8 +166,8 @@ class ProductsController extends Controller
      */
     public function clearCache()
     {
-        $this->cache->clear();
+        (new FilesystemCache)->clear();
 
-        return $this->list();
+        return $this->redirectToRoute('show_products_list');
     }
 }
