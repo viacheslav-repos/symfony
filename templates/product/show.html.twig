@@ -29,6 +29,8 @@
         </p>
     {% endif %}
 
+    <p>Image: <img src="{{ asset('uploads/brochures/' ~ product.brochure) }}" width="100"></p>
+
     <a href="{{ path('show_products_list') }}">Back to list</a> | <a href="{{ path('edit_product', {'productId': product.id}) }}">Edit</a>
 
 </div>

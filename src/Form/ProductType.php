@@ -34,6 +34,7 @@ class ProductType extends AbstractType
                     'multiple'     => true,
                     'expanded'     => true
                 ))
+                ->add('brochure', Type\FileType::class, array('label' => 'Brochure (image file)'))
                 ->add('save', Type\SubmitType::class, array('label' => 'Save'));
     }
 }

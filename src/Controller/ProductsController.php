@@ -7,6 +7,7 @@ use App\Event\AddProductEvent;
 use App\Event\DeleteProductEvent;
 use App\Event\EditProductEvent;
 use App\Form\ProductType;
+use App\Service\FileUploader;
 use Doctrine\ORM\EntityManager;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Request;
@@ -89,11 +90,9 @@ class ProductsController extends Controller
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            /** @var Product $productData */
             $productData = $form->getData();
 
-            $this->entityManager->persist($productData);
-            $this->entityManager->flush();
+            $this->save($form->getData());
             $this->get('event_dispatcher')->dispatch('product.add', new AddProductEvent($productData));
 
             return $this->redirectToRoute('show_products_list');
@@ -121,16 +120,17 @@ class ProductsController extends Controller
             throw $this->createNotFoundException('No product found for id ' . $productId);
         }
 
+        $product->setBrochure(null);
+
         $form = $this->createForm(ProductType::class, $product);
 
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $this->entityManager->persist($form->getData());
-            $this->entityManager->flush();
+            $this->save($form->getData());
             $this->get('event_dispatcher')->dispatch('product.edit', new EditProductEvent($product));
 
-            return $this->redirectToRoute('show_product_by_id', ['productId' => $productId]);
+            return $this->redirectToRoute('show_products_list');
         }
 
         return $this->render('product/edit.html.twig', array(
@@ -154,6 +154,8 @@ class ProductsController extends Controller
             throw $this->createNotFoundException('No product found for id ' . $productId);
         }
 
+        (new FileUploader($this->getParameter('brochures_directory')))->delete($product->getBrochure());
+
         $this->entityManager->remove($product);
         $this->entityManager->flush();
         $this->get('event_dispatcher')->dispatch('product.delete', new DeleteProductEvent($productId));
@@ -170,5 +172,21 @@ class ProductsController extends Controller
         (new FilesystemCache)->clear();
 
         return $this->redirectToRoute('show_products_list');
+    }
+
+    /**
+     * @param Product $productData
+     *
+     * @throws \Doctrine\ORM\ORMException
+     * @throws \Doctrine\ORM\OptimisticLockException
+     */
+    private function save(Product $productData)
+    {
+        $fileName = (new FileUploader($this->getParameter('brochures_directory')))->upload($productData->getBrochure());
+
+        $productData->setBrochure($fileName);
+
+        $this->entityManager->persist($productData);
+        $this->entityManager->flush();
     }
 }

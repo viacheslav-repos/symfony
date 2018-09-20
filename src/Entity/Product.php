@@ -69,6 +69,14 @@ class Product
      */
     private $attributeValues;
 
+    /**
+     * @ORM\Column(type="string", length=255, nullable=true)
+     *
+     * @Assert\NotBlank(message="Please, upload the product brochure as an image (.jpeg, .png).")
+     * @Assert\File(mimeTypes={ "image/jpeg", "image/png" }, maxSize="6000000")
+     */
+    private $brochure;
+
     public function __construct()
     {
         $this->attributeValues = new ArrayCollection();
@@ -151,6 +159,18 @@ class Product
             $this->attributeValues->removeElement($attributeValue);
             $attributeValue->removeProduct($this);
         }
+
+        return $this;
+    }
+
+    public function getBrochure()
+    {
+        return $this->brochure;
+    }
+
+    public function setBrochure($brochure): self
+    {
+        $this->brochure = $brochure;
 
         return $this;
     }
