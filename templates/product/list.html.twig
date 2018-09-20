@@ -12,6 +12,12 @@
 
     <h1>Products list</h1>
 
+    {% for message in app.flashes('info') %}
+        <div class="flash-info">
+            {{ message }}
+        </div>
+    {% endfor %}
+
     {% for product in products %}
         {{ product.id }} | {{ product.title }} |
         <a href="{{ path('show_product_by_id', {'productId': product.id}) }}">details</a> |

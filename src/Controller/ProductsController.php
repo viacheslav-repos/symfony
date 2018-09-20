@@ -157,6 +157,7 @@ class ProductsController extends Controller
         $this->entityManager->remove($product);
         $this->entityManager->flush();
         $this->get('event_dispatcher')->dispatch('product.delete', new DeleteProductEvent($productId));
+        $this->addFlash('info', "Product with id #{$productId} has been deleted");
 
         return $this->redirectToRoute('show_products_list');
     }
